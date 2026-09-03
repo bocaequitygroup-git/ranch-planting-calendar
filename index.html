@@ -1,264 +1,893 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ngapori Ranch Planting Calendar — VPOS</title>
+<title>Ngapori Ranch Planting Calendar</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
-  :root{
-    --bg:#E7E2CE; --paper:#FBF8EF; --ink:#262F1F; --inkSoft:#5B5942;
-    --green:#3C5A3E; --greenDark:#25381F; --mustard:#C4922B; --clay:#A8472E; --line:#CFC8AA;
+
+  :root {
+    --bg: #E7E2CE;
+    --paper: #FBF8EF;
+    --ink: #262F1F;
+    --ink-soft: #5B5942;
+    --green: #3C5A3E;
+    --green-dark: #25381F;
+    --mustard: #C4922B;
+    --clay: #A8472E;
+    --line: #CFC8AA;
   }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif}
-  .display-font{font-family:'Roboto Slab',serif}
-  .mono-font{font-family:'IBM Plex Mono',monospace}
-  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 64px}
-  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:20px}
-  .title-row{display:flex;align-items:center;gap:10px}
-  h1{font-size:26px;font-weight:700;color:var(--greenDark);margin:0}
-  .sub{color:var(--inkSoft);margin-top:6px;font-size:14.5px;max-width:560px;line-height:1.5}
-  .source-line{display:flex;align-items:center;gap:8px;margin-bottom:22px;font-size:12.5px;color:var(--inkSoft)}
-  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block}
-  .hero{background:var(--greenDark);border-radius:8px;padding:18px 22px;margin-bottom:26px;display:flex;gap:20px;align-items:center;flex-wrap:wrap;color:var(--paper)}
-  .hero-label{font-size:11px;letter-spacing:.06em;color:#C9C4A8}
-  .hero-month{font-size:19px;font-weight:700}
-  .hero-text{flex:1;min-width:240px;font-size:13.5px;line-height:1.55;color:#DCD8C0}
-  .btn{background:var(--mustard);color:var(--greenDark);border:none;border-radius:6px;padding:10px 16px;font-weight:700;font-size:13.5px;cursor:pointer}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
-  .card{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:18px 16px 14px;cursor:pointer;transition:transform .15s ease, box-shadow .15s ease}
-  .card:hover{transform:translateY(-3px);box-shadow:0 8px 18px rgba(38,47,31,.18)}
-  .card.empty{opacity:.55}
-  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-  .swatch{width:9px;height:9px;border-radius:50%;display:inline-block}
-  .card-month{font-size:18px;font-weight:700;color:var(--greenDark)}
-  .stamp{position:absolute;top:10px;right:-6px;transform:rotate(8deg);border:2px dashed var(--clay);color:var(--clay);font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.08em;padding:2px 7px;border-radius:3px;background:rgba(168,71,46,.06)}
-  .row{display:flex;justify-content:space-between;font-size:13px;color:var(--inkSoft);margin-bottom:5px}
-  .row b{color:var(--ink)}
-  .none-row{font-size:12.5px;color:var(--inkSoft);font-style:italic;padding-top:2px}
-  .foot-note{font-size:12.5px;color:var(--inkSoft);margin-top:22px;line-height:1.6;max-width:720px}
-  .overlay{position:fixed;inset:0;background:rgba(38,47,31,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
-  .modal{background:var(--paper);border-radius:8px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 50px rgba(0,0,0,.35)}
-  .modal-head{padding:22px 24px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--paper);display:flex;justify-content:space-between;align-items:flex-start}
-  .modal-eyebrow{font-size:11.5px;letter-spacing:.06em;color:var(--inkSoft)}
-  .modal-title{font-size:23px;font-weight:700;color:var(--greenDark);margin:2px 0 0}
-  .close{background:none;border:none;cursor:pointer;color:var(--inkSoft);font-size:20px;line-height:1;padding:4px}
-  .modal-body{padding:14px 24px 24px}
-  .group-head{display:flex;align-items:center;gap:8px;margin:16px 0 8px}
-  .group-name{font-weight:700;font-size:14px}
-  .cohort-list{border:1px solid var(--line);border-radius:6px;overflow:hidden}
-  .cohort-row{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;cursor:pointer;border-top:1px solid var(--line)}
-  .cohort-row:first-child{border-top:none}
-  .cohort-row:hover{background:var(--bg)}
-  .gap-note{background:var(--bg);border-radius:6px;padding:12px 14px;font-size:12.5px;color:var(--inkSoft);line-height:1.55;margin-top:16px}
-  .empty-state{text-align:center;padding:30px 10px;color:var(--inkSoft);font-size:13.5px}
-  .field-detail{display:flex;flex-direction:column;gap:14px;padding:20px 24px 24px}
-  .fd-row{display:flex;gap:12px}
-  .fd-icon{width:32px;height:32px;border-radius:7px;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
-  .fd-label{font-size:11px;letter-spacing:.06em;color:var(--inkSoft);margin-bottom:2px}
-  .fd-val{font-size:14.5px;font-weight:600;color:var(--ink)}
-  .fd-sub{font-size:12.5px;color:var(--inkSoft);margin-top:1px}
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  .display-font { font-family: 'Roboto Slab', serif; }
+  .mono-font { font-family: 'IBM Plex Mono', monospace; }
+
+  .icon { display: inline-flex; flex-shrink: 0; }
+  .icon svg { width: 1em; height: 1em; }
+
+  button { font-family: inherit; }
+
+  .packet-card {
+    position: relative;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+  }
+  .packet-card::before {
+    content: "";
+    position: absolute;
+    top: -1px; left: 10px; right: 10px;
+    height: 8px;
+    background-image: radial-gradient(circle at 6px 0px, transparent 4px, var(--bg) 4.5px);
+    background-size: 12px 8px;
+    background-repeat: repeat-x;
+  }
+  .packet-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 18px rgba(38,47,31,0.18);
+  }
+  .stamp {
+    position: absolute;
+    top: 10px; right: -6px;
+    transform: rotate(8deg);
+    border: 2px dashed var(--clay);
+    color: var(--clay);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: rgba(168,71,46,0.06);
+  }
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(38,47,31,0.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px; z-index: 50; backdrop-filter: blur(1px);
+  }
+  .modal-card {
+    background: var(--paper);
+    border-radius: 8px;
+    max-width: 640px; width: 100%;
+    max-height: 85vh; overflow-y: auto;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+  }
+  .glossary-row + .glossary-row { border-top: 1px solid var(--line); }
+  .crop-row:hover { background: var(--bg); }
+  ::selection { background: var(--mustard); color: var(--green-dark); }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 20px 64px; }
+
+  .header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+  .title-row { display: flex; align-items: center; gap: 10px; }
+  .title-row h1 { font-size: 28px; font-weight: 700; color: var(--green-dark); margin: 0; }
+  .subtitle { color: var(--ink-soft); margin-top: 6px; font-size: 15px; max-width: 520px; }
+  .header-actions { display: flex; gap: 10px; }
+  .btn-secondary {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 6px; padding: 9px 14px; font-size: 13.5px; font-weight: 600;
+    color: var(--green); cursor: pointer;
+  }
+
+  .sync-banner { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; font-size: 12.5px; color: var(--ink-soft); }
+  .sync-banner.fallback { color: var(--clay); }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; }
+  .link-btn { background: none; border: none; text-decoration: underline; color: var(--clay); cursor: pointer; font-size: 12.5px; padding: 0; }
+
+  .due-bar {
+    background: var(--green-dark); border-radius: 8px; padding: 18px 22px; margin-bottom: 28px;
+    display: flex; gap: 20px; align-items: center; flex-wrap: wrap; color: var(--paper);
+  }
+  .due-bar .due-label-block { display: flex; align-items: center; gap: 10px; min-width: 180px; }
+  .due-bar .due-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #C9C4A8; }
+  .due-bar .due-month { font-size: 19px; font-weight: 700; }
+  .due-bar .due-desc { flex: 1; min-width: 240px; font-size: 13.5px; line-height: 1.5; color: #DCD8C0; }
+  .due-bar .due-btn {
+    background: var(--mustard); color: var(--green-dark); border: none;
+    border-radius: 6px; padding: 10px 16px; font-weight: 700; font-size: 13.5px;
+    cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+
+  .year-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+  .month-card { padding: 20px 18px 16px; }
+  .month-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .month-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .month-name { font-size: 19px; font-weight: 700; color: var(--green-dark); }
+  .month-stats { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+  .month-stats .row { display: flex; justify-content: space-between; color: var(--ink-soft); }
+  .month-stats .row .val { font-weight: 600; }
+  .month-stats .total {
+    border-top: 1px dashed var(--line); margin-top: 4px; padding-top: 6px;
+    display: flex; justify-content: space-between; font-weight: 700; color: var(--ink);
+  }
+
+  .footnote { font-size: 12.5px; color: var(--ink-soft); margin-top: 24px; line-height: 1.6; max-width: 720px; }
+
+  .modal-header {
+    padding: 22px 24px 16px; border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; background: var(--paper);
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .modal-eyebrow { font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); }
+  .modal-title { font-size: 24px; font-weight: 700; color: var(--green-dark); margin: 2px 0 0; }
+  .close-btn { background: none; border: none; cursor: pointer; color: var(--ink-soft); padding: 4px; display: flex; }
+
+  .modal-body { padding: 8px 24px 24px; }
+
+  .zone-pill {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; margin-bottom: 4px;
+    background: var(--bg); border-radius: 20px; padding: 5px 10px 5px 12px; font-size: 12.5px; color: var(--ink);
+  }
+  .zone-pill button { background: none; border: none; cursor: pointer; color: var(--ink-soft); display: flex; padding: 2px; }
+
+  .group-block { margin-top: 18px; }
+  .group-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .group-title { font-weight: 700; font-size: 14.5px; }
+  .group-list { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .crop-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 11px 14px 11px 12px; cursor: pointer;
+  }
+  .crop-row .left { display: flex; align-items: center; gap: 10px; }
+  .crop-emoji { font-size: 20px; line-height: 1; }
+  .crop-name { font-weight: 600; font-size: 14.5px; }
+  .crop-window { font-size: 12.5px; color: var(--ink-soft); margin-top: 1px; }
+  .crop-row .right { display: flex; align-items: center; gap: 10px; }
+  .crop-beds { font-size: 12.5px; color: var(--green); font-weight: 600; }
+
+  .map-caption { font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 8px; }
+  .map-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 12px; }
+  .map-legend .item { display: flex; align-items: center; gap: 6px; color: var(--ink-soft); }
+  .map-legend .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .map-legend .note { color: var(--ink-soft); font-style: italic; }
+
+  .crop-detail-header { padding: 22px 24px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: flex-start; }
+  .crop-detail-title-row { display: flex; align-items: center; gap: 10px; }
+  .crop-detail-emoji { font-size: 26px; line-height: 1; }
+  .crop-detail-title { font-size: 21px; font-weight: 700; color: var(--green-dark); margin: 0; }
+  .crop-detail-body { padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 16px; }
+
+  .detail-row { display: flex; gap: 12px; }
+  .detail-icon { width: 34px; height: 34px; border-radius: 7px; background: var(--bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .detail-label { font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 2px; }
+  .detail-value { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .detail-sub { font-size: 12.5px; color: var(--ink-soft); margin-top: 1px; }
+
+  .cohort-note { background: var(--bg); border-radius: 6px; padding: 12px 14px; font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; }
+
+  .glossary-title { font-size: 21px; font-weight: 700; color: var(--green-dark); margin: 0; }
+  .glossary-body { padding: 6px 24px 22px; }
+  .glossary-row { padding: 13px 0; }
+  .glossary-term { font-weight: 700; font-size: 13.5px; color: var(--green); margin-bottom: 3px; }
+  .glossary-meaning { font-size: 13.5px; color: var(--ink); line-height: 1.5; }
+
+  @media (max-width: 480px) {
+    .title-row h1 { font-size: 22px; }
+    .due-bar { padding: 16px; }
+  }
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="app"></div>
+
 <script>
-// ---- Real data extracted from Ranch_Vegetable_VPOS_MASTER_v2026.xlsx (COHORT_MASTER, BED_MASTER) ----
-// This is a STATIC SNAPSHOT, not a live connection. Re-run extraction and regenerate this file to refresh.
-const SNAPSHOT_DATE = "September 3, 2026 (Phase 2 reconciliation applied)";
-const COHORTS = [{"cohort_id": "CHT-2026-AEG-01", "crop_id": "AEG", "crop_name": "African Eggplant", "block_id": "BLK-01", "planting_date": "2026-09-05", "expected_harvest_date": "2027-01-18", "status": "Active", "cycle_days": 135, "irrigation_profile_id": "IRRG-DRIP-HEAVY", "environment": "Field", "assigned_beds": ["B1-01"]}, {"cohort_id": "CHT-2026-EGP-01", "crop_id": "EGP", "crop_name": "Eggplant", "block_id": "BLK-01", "planting_date": "2026-09-05", "expected_harvest_date": "2026-12-29", "status": "Active", "cycle_days": 115, "irrigation_profile_id": "IRRG-DRIP-STD", "environment": "Field", "assigned_beds": ["B1-02"]}, {"cohort_id": "CHT-2026-TOM-01", "crop_id": "TOM", "crop_name": "Tomatoes", "block_id": "BLK-01", "planting_date": "2026-09-05", "expected_harvest_date": "2026-12-19", "status": "Active", "cycle_days": 105, "irrigation_profile_id": "IRRG-DRIP-STD", "environment": "Field", "assigned_beds": ["B1-03"]}, {"cohort_id": "CHT-2026-OKR-01", "crop_id": "OKR", "crop_name": "Okra", "block_id": "BLK-01", "planting_date": "2026-09-05", "expected_harvest_date": "2026-11-19", "status": "Active", "cycle_days": 75, "irrigation_profile_id": "IRRG-DRIP-STD", "environment": "Field", "assigned_beds": ["B1-04"]}, {"cohort_id": "CHT-2026-CUC-01", "crop_id": "CUC", "crop_name": "Cucumber", "block_id": "BLK-01", "planting_date": "2026-09-05", "expected_harvest_date": "2026-11-04", "status": "Active", "cycle_days": 60, "irrigation_profile_id": "IRRG-DRIP-STD", "environment": "Field", "assigned_beds": ["B1-05"]}, {"cohort_id": "CHT-2026-SCB-01", "crop_id": "SCB", "crop_name": "Scotch Bonnet", "block_id": "BLK-01", "planting_date": "2026-09-05", "expected_harvest_date": "2027-02-17", "status": "Active", "cycle_days": 165, "irrigation_profile_id": "IRRG-DRIP-HEAVY", "environment": "Field", "assigned_beds": ["B1-06"]}, {"cohort_id": "CHT-2026-HAB-01", "crop_id": "HAB", "crop_name": "Habanero", "block_id": "BLK-01", "planting_date": "2026-09-05", "expected_harvest_date": "2027-02-17", "status": "Active", "cycle_days": 165, "irrigation_profile_id": "IRRG-DRIP-HEAVY", "environment": "Field", "assigned_beds": ["B1-07"]}, {"cohort_id": "CHT-2026-BEC-01", "crop_id": "BEC", "crop_name": "Bird\u2019s Eye Chili", "block_id": "BLK-01", "planting_date": "2026-09-05", "expected_harvest_date": "2027-03-19", "status": "Active", "cycle_days": 195, "irrigation_profile_id": "IRRG-DRIP-STD", "environment": "Field", "assigned_beds": ["B1-08"]}, {"cohort_id": "CHT-2026-BLP-01", "crop_id": "BLP", "crop_name": "Bell Pepper", "block_id": "BLK-01", "planting_date": "2026-09-05", "expected_harvest_date": "2026-12-29", "status": "Active", "cycle_days": 115, "irrigation_profile_id": "IRRG-DRIP-STD", "environment": "Field", "assigned_beds": ["B1-09"]}, {"cohort_id": "CHT-2026-MCH-01", "crop_id": "MCH", "crop_name": "Mchicha", "block_id": "BLK-02", "planting_date": "2026-09-15", "expected_harvest_date": "2026-10-15", "status": "Active", "cycle_days": 30, "irrigation_profile_id": "IRRG-OVHD-FAST", "environment": "Field", "assigned_beds": ["B2-01"]}, {"cohort_id": "CHT-2026-SUK-01", "crop_id": "SUK", "crop_name": "Sukuma Wiki", "block_id": "BLK-02", "planting_date": "2026-09-15", "expected_harvest_date": "2026-10-23", "status": "Active", "cycle_days": 38, "irrigation_profile_id": "IRRG-OVHD-FAST", "environment": "Field", "assigned_beds": ["B2-02"]}, {"cohort_id": "CHT-2026-MST-01", "crop_id": "MST", "crop_name": "Mustard Greens", "block_id": "BLK-02", "planting_date": "2026-09-15", "expected_harvest_date": "2026-10-20", "status": "Scheduled", "cycle_days": 35, "irrigation_profile_id": "IRRG-OVHD-FAST", "environment": "Field", "assigned_beds": ["B2-03"]}, {"cohort_id": "CHT-2026-CHD-01", "crop_id": "CHD", "crop_name": "Swiss Chard", "block_id": "BLK-02", "planting_date": "2026-09-15", "expected_harvest_date": "2026-10-30", "status": "Scheduled", "cycle_days": 45, "irrigation_profile_id": "IRRG-OVHD-STD", "environment": "Field", "assigned_beds": ["B2-04"]}, {"cohort_id": "CHT-2026-CWL-01", "crop_id": "CWL", "crop_name": "Cowpea Leaves", "block_id": "BLK-02", "planting_date": "2026-09-15", "expected_harvest_date": "2026-10-23", "status": "Scheduled", "cycle_days": 38, "irrigation_profile_id": "IRRG-OVHD-STD", "environment": "Field", "assigned_beds": ["B2-05"]}, {"cohort_id": "CHT-2026-SPT-01", "crop_id": "SPT", "crop_name": "Spider Plant", "block_id": "BLK-02", "planting_date": "2026-09-15", "expected_harvest_date": "2026-10-23", "status": "Scheduled", "cycle_days": 38, "irrigation_profile_id": "IRRG-OVHD-STD", "environment": "Field", "assigned_beds": ["B2-06"]}, {"cohort_id": "CHT-2026-BTL-01", "crop_id": "BTL", "crop_name": "Bitter Leaf", "block_id": "BLK-02", "planting_date": "2026-09-15", "expected_harvest_date": "2026-11-29", "status": "Scheduled", "cycle_days": 75, "irrigation_profile_id": "IRRG-OVHD-STD", "environment": "Field", "assigned_beds": ["B2-07"]}, {"cohort_id": "CHT-2026-UGW-01", "crop_id": "UGW", "crop_name": "Ugwu", "block_id": "BLK-02", "planting_date": "2026-09-15", "expected_harvest_date": "2026-12-14", "status": "Scheduled", "cycle_days": 90, "irrigation_profile_id": "IRRG-OVHD-HEAVY", "environment": "Field", "assigned_beds": ["B2-08"]}, {"cohort_id": "CHT-2026-LET-01", "crop_id": "LET", "crop_name": "Lettuce", "block_id": "BLK-02", "planting_date": "2026-09-15", "expected_harvest_date": "2026-10-15", "status": "Scheduled", "cycle_days": 30, "irrigation_profile_id": "IRRG-OVHD-FAST", "environment": "Field", "assigned_beds": ["B2-09"]}, {"cohort_id": "CHT-2026-KAL-01", "crop_id": "KAL", "crop_name": "Kale", "block_id": "BLK-02", "planting_date": "2026-09-15", "expected_harvest_date": "2026-10-30", "status": "Scheduled", "cycle_days": 45, "irrigation_profile_id": "IRRG-OVHD-STD", "environment": "Field", "assigned_beds": ["B2-10"]}, {"cohort_id": "CHT-2026-SPN-01", "crop_id": "SPN", "crop_name": "Spinach", "block_id": "BLK-02", "planting_date": "2026-09-15", "expected_harvest_date": "2026-10-23", "status": "Scheduled", "cycle_days": 38, "irrigation_profile_id": "IRRG-OVHD-FAST", "environment": "Field", "assigned_beds": ["B2-11"]}, {"cohort_id": "CHT-2026-BRO-01", "crop_id": "BRO", "crop_name": "Broccoli", "block_id": "BLK-03", "planting_date": "2026-09-20", "expected_harvest_date": "2026-11-27", "status": "Scheduled", "cycle_days": 68, "irrigation_profile_id": "IRRG-OVHD-STD", "environment": "Field", "assigned_beds": ["B3-02"]}, {"cohort_id": "CHT-2026-CAU-01", "crop_id": "CAU", "crop_name": "Cauliflower", "block_id": "BLK-03", "planting_date": "2026-09-20", "expected_harvest_date": "2026-12-07", "status": "Scheduled", "cycle_days": 78, "irrigation_profile_id": "IRRG-OVHD-STD", "environment": "Field", "assigned_beds": ["B3-03"]}, {"cohort_id": "CHT-2026-SWP-01", "crop_id": "SWP", "crop_name": "Sweet Potatoes", "block_id": "BLK-04", "planting_date": "2026-09-25", "expected_harvest_date": "2027-01-23", "status": "Scheduled", "cycle_days": 120, "irrigation_profile_id": "IRRG-DRIP-LOW", "environment": "Field", "assigned_beds": ["B4-05"]}, {"cohort_id": "CHT-2026-YAM-01", "crop_id": "YAM", "crop_name": "Yams", "block_id": "BLK-04", "planting_date": "2026-09-25", "expected_harvest_date": "2027-04-23", "status": "Scheduled", "cycle_days": 210, "irrigation_profile_id": "IRRG-DRIP-STD", "environment": "Field", "assigned_beds": ["B4-06"]}, {"cohort_id": "CHT-2026-CAS-01", "crop_id": "CAS", "crop_name": "Cassava", "block_id": "Z5", "planting_date": "2026-09-20", "expected_harvest_date": "2027-07-17", "status": "Scheduled", "cycle_days": 300, "irrigation_profile_id": "IRRG-DRIP-LOW", "environment": "Field", "assigned_beds": ["Z5-01"]}, {"cohort_id": "CHT-2026-CAR-01", "crop_id": "CAR", "crop_name": "Carrots", "block_id": "BLK-04", "planting_date": "2026-09-25", "expected_harvest_date": "2026-12-12", "status": "Scheduled", "cycle_days": 78, "irrigation_profile_id": "IRRG-DRIP-STD", "environment": "Field", "assigned_beds": ["B4-07"]}, {"cohort_id": "CHT-2026-BET-01", "crop_id": "BET", "crop_name": "Beets", "block_id": "BLK-04", "planting_date": "2026-09-25", "expected_harvest_date": "2026-12-02", "status": "Scheduled", "cycle_days": 68, "irrigation_profile_id": "IRRG-DRIP-STD", "environment": "Field", "assigned_beds": ["B4-08"]}, {"cohort_id": "CHT-2026-TRN-01", "crop_id": "TRN", "crop_name": "Turnips", "block_id": "BLK-04", "planting_date": "2026-09-25", "expected_harvest_date": "2026-11-17", "status": "Scheduled", "cycle_days": 53, "irrigation_profile_id": "IRRG-DRIP-STD", "environment": "Field", "assigned_beds": ["B4-09"]}, {"cohort_id": "CHT-2026-ASP-01", "crop_id": "ASP", "crop_name": "Asparagus", "block_id": "Z5", "planting_date": "2026-09-20", "expected_harvest_date": "2028-03-21", "status": "Scheduled", "cycle_days": 548, "irrigation_profile_id": "IRRG-DRIP-STD", "environment": "Field", "assigned_beds": ["Z5-02"]}, {"cohort_id": "CHT-2026-ONN-01", "crop_id": "ONN", "crop_name": "Onions", "block_id": "BLK-02", "planting_date": "2026-09-15", "expected_harvest_date": "2026-12-29", "status": "Scheduled", "cycle_days": 105, "irrigation_profile_id": "IRRG-DRIP-LOW", "environment": "Field", "assigned_beds": ["B2-12"]}, {"cohort_id": "CHT-2026-PLT-01", "crop_id": "PLT", "crop_name": "Plantains", "block_id": "Z5", "planting_date": "2026-09-20", "expected_harvest_date": "2027-12-17", "status": "Scheduled", "cycle_days": 453, "irrigation_profile_id": "IRRG-DRIP-HEAVY", "environment": "Field", "assigned_beds": ["Z5-03"]}, {"cohort_id": "CHT-2026-AMA-01", "crop_id": "AMA", "crop_name": "Amaranth (Grain)", "block_id": "BLK-04", "planting_date": "2026-09-25", "expected_harvest_date": "2026-12-17", "status": "Scheduled", "cycle_days": 83, "irrigation_profile_id": "IRRG-DRIP-STD", "environment": "Field", "assigned_beds": ["B4-10"]}, {"cohort_id": "CHT-2026-CWP-01", "crop_id": "CWP", "crop_name": "Cowpea (Grain)", "block_id": "BLK-03", "planting_date": "2026-09-20", "expected_harvest_date": "2026-11-29", "status": "Active", "cycle_days": 70, "irrigation_profile_id": "IRRG-DRIP-LOW", "environment": "Field", "assigned_beds": ["B3-01"]}, {"cohort_id": "CHT-2026-CLO-01", "crop_id": "CLO", "crop_name": "Clover", "block_id": "BLK-04", "planting_date": "2026-09-25", "expected_harvest_date": "2026-11-17", "status": "Active", "cycle_days": 53, "irrigation_profile_id": "IRRG-OVHD-LOW", "environment": "Field", "assigned_beds": ["B4-01"]}, {"cohort_id": "CHT-2026-RYE-01", "crop_id": "RYE", "crop_name": "Rye", "block_id": "BLK-04", "planting_date": "2026-09-25", "expected_harvest_date": "2026-12-09", "status": "Scheduled", "cycle_days": 75, "irrigation_profile_id": "IRRG-OVHD-LOW", "environment": "Field", "assigned_beds": ["B4-02"]}, {"cohort_id": "CHT-2026-VTC-01", "crop_id": "VTC", "crop_name": "Vetch", "block_id": "BLK-04", "planting_date": "2026-09-25", "expected_harvest_date": "2026-11-27", "status": "Scheduled", "cycle_days": 63, "irrigation_profile_id": "IRRG-OVHD-LOW", "environment": "Field", "assigned_beds": ["B4-03"]}, {"cohort_id": "CHT-2026-BCK-01", "crop_id": "BCK", "crop_name": "Buckwheat", "block_id": "BLK-04", "planting_date": "2026-09-25", "expected_harvest_date": "2026-11-02", "status": "Scheduled", "cycle_days": 38, "irrigation_profile_id": "IRRG-OVHD-LOW", "environment": "Field", "assigned_beds": ["B4-04"]}];
-const BLOCK_BED_COUNTS = {"B1": 55, "B2": 55, "B3": 55, "B4": 55, "Z5": 11, "GH1": 8, "GH2": 8, "GH3": 8, "GH4": 8, "HT1": 10, "HT2": 10, "HT3": 10, "HT4": 10, "HT5": 10, "HT6": 10};
-const BLOCK_LABELS = {
-  'BLK-01': 'Block 1 — Solanaceae & Peppers',
-  'BLK-02': 'Block 2 — African Leafy Greens',
-  'BLK-03': 'Block 3 — Heavy Brassicas & Cucumbers',
-  'BLK-04': 'Block 4 — Roots, Staples & Cover Crops',
-  'Z5': 'Zone 5 — Perennial Anchor (No-Till)'
+/* ---------- Icons (simplified inline SVGs, stroke = currentColor) ---------- */
+const ICONS = {
+  sprout: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c0-4.4-1.8-8-6-9 0 4.4 1.8 8 6 9Z"/><path d="M14 20c0-6 2-10 7-11 0 6-2 10-7 11Z"/><path d="M10 20c.4-3 2-5.5 4.5-7"/></svg>`,
+  mapPin: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  calendar: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`,
+  info: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>`,
+  x: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`,
+  leaf: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 4 13c0-6 6-11 16-11 0 10-5 16-11 16Z"/><path d="M4 13c4 0 8 2 9 7"/></svg>`,
+  home: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11a1 1 0 0 0 1 1h4v-7h4v7h4a1 1 0 0 0 1-1V9"/></svg>`,
+  treePine: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 14 3 3.3a1 1 0 0 1-.7 1.7H4.7a1 1 0 0 1-.7-1.7L7 14"/><path d="m17 8 2.8 3.1a1 1 0 0 1-.7 1.7H5a1 1 0 0 1-.7-1.7L7 8"/><path d="M12 2 8.5 6.4A1 1 0 0 0 9.3 8h5.4a1 1 0 0 0 .8-1.6Z"/><path d="M12 22v-3"/></svg>`,
+  sun: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`,
+  chevronRight: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`,
+  bell: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`,
+  refresh: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.4-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.4 6.4L3 16"/><path d="M8 16H3v5"/></svg>`,
+  alertTriangle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></svg>`,
 };
-const BLOCK_COLORS = { 'BLK-01':'#A8472E', 'BLK-02':'#3C8D4A', 'BLK-03':'#8A6D2F', 'BLK-04':'#4A6FA5', 'Z5':'#7A4A8A' };
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const CROP_EMOJI = {
-  'African Eggplant':'🍆','Eggplant':'🍆','Tomatoes':'🍅','Okra':'🌱','Cucumber':'🥒','Scotch Bonnet':'🌶️','Habanero':'🌶️',
-  'Bird’s Eye Chili':'🌶️','Bell Pepper':'🫑','Mchicha':'🌿','Sukuma Wiki':'🍃','Mustard Greens':'🍃','Swiss Chard':'🍃',
-  'Cowpea Leaves':'🌿','Spider Plant':'🌿','Bitter Leaf':'🌿','Ugwu':'🌿','Lettuce':'🥬','Kale':'🥬','Spinach':'🥬',
-  'Broccoli':'🥦','Cauliflower':'🥦','Sweet Potatoes':'🍠','Yams':'🍠','Cassava':'🥔','Carrots':'🥕','Beets':'🌱',
-  'Turnips':'🌱','Asparagus':'🌱','Onions':'🧅','Plantains':'🌴','Amaranth (Grain)':'🌾','Cowpea (Grain)':'🌾',
-  'Clover':'🌾','Rye':'🌾','Vetch':'🌾','Buckwheat':'🌾'
+function icon(name, size) {
+  return `<span class="icon" style="width:${size}px;height:${size}px;color:inherit">${ICONS[name] || ""}</span>`;
+}
+
+/* ---------- Live data source ----------
+   Reads directly from the Ngapori Ranch Planting Calendar Google Sheet.
+   Sheet must be shared as "Anyone with the link -> Viewer".
+------------------------------------------------------------ */
+const SHEET_ID = "1TT57550KyoeTlWFG7Sk5ZVau7HwgX7-WDW-S71bv1u4";
+const SHEET_GID = "879636518"; // identifies the specific tab
+const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}`;
+
+function normalizeRow(row) {
+  const get = (key) => (row[key] !== undefined ? String(row[key]).trim() : "");
+  return {
+    m: get("Month"),
+    crop: get("Crop"),
+    coh: get("Cohort Prefix"),
+    zone: get("Target Zone"),
+    ztype: get("Zone Type"),
+    beds: get("Required Beds"),
+    window: get("Scheduled Planting Window"),
+    method: get("Propagation / Method"),
+  };
+}
+
+/* ---------- Fallback sample data (used only if the sheet can't be reached) ---------- */
+const SAMPLE_DATA = [
+  {m:"January",crop:"Spinach",coh:"COH-SPN-YYYY-XXX",zone:"GH1",ztype:"GH/HT",beds:"5 beds",window:"Jan 1st week",method:"Nursery, fast sprout"},
+  {m:"January",crop:"Lettuce",coh:"COH-LET-YYYY-XXX",zone:"GH2",ztype:"GH/HT",beds:"5 beds",window:"Jan 1st week",method:"Nursery, fast sprout"},
+  {m:"January",crop:"Mchicha",coh:"COH-MCH-YYYY-XXX",zone:"GH4",ztype:"GH/HT",beds:"4 beds",window:"Jan 2nd week",method:"Direct sow"},
+  {m:"January",crop:"Kale",coh:"COH-KAL-YYYY-XXX",zone:"HT1",ztype:"GH/HT",beds:"4 beds",window:"Jan 2nd week",method:"Nursery, fast sprout"},
+  {m:"January",crop:"Swiss Chard",coh:"COH-CHD-YYYY-XXX",zone:"HT2",ztype:"GH/HT",beds:"3 beds",window:"Jan 3rd week",method:"Transplant seedling"},
+  {m:"January",crop:"Spider Plant",coh:"COH-SPD-YYYY-XXX",zone:"HT3",ztype:"GH/HT",beds:"3 beds",window:"Jan 4th week",method:"Direct sow"},
+  {m:"January",crop:"Sukuma Wiki",coh:"COH-SUK-YYYY-XXX",zone:"HT4",ztype:"GH/HT",beds:"4 beds",window:"Jan 2nd week",method:"Transplant seedling"},
+  {m:"January",crop:"Mustard Greens",coh:"COH-MUS-YYYY-XXX",zone:"HT5",ztype:"GH/HT",beds:"3 beds",window:"Jan 3rd week",method:"Transplant seedling"},
+  {m:"January",crop:"Cowpea Leaves",coh:"COH-COW-YYYY-XXX",zone:"HT6",ztype:"GH/HT",beds:"3 beds",window:"Jan 4th week",method:"Direct sow"},
+  {m:"January",crop:"Radish",coh:"COH-RAD-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"January",method:"Monthly rapid rotation"},
+  {m:"January",crop:"Plantains / Cassava / Asparagus",coh:"COH-PER-YYYY-XXX",zone:"Z5",ztype:"FIELD (perennial)",beds:"Variable",window:"January",method:"Perennial; dormant winter"},
+  {m:"February",crop:"Spinach",coh:"COH-SPN-YYYY-XXX",zone:"GH1",ztype:"GH/HT",beds:"5 beds",window:"Feb 1st week",method:"Nursery, fast sprout"},
+  {m:"February",crop:"Lettuce",coh:"COH-LET-YYYY-XXX",zone:"GH2",ztype:"GH/HT",beds:"5 beds",window:"Feb 1st week",method:"Nursery, fast sprout"},
+  {m:"February",crop:"Mchicha",coh:"COH-MCH-YYYY-XXX",zone:"GH4",ztype:"GH/HT",beds:"4 beds",window:"Feb 2nd week",method:"Direct sow"},
+  {m:"February",crop:"Kale",coh:"COH-KAL-YYYY-XXX",zone:"HT1",ztype:"GH/HT",beds:"4 beds",window:"Feb 2nd week",method:"Nursery, fast sprout"},
+  {m:"February",crop:"Swiss Chard",coh:"COH-CHD-YYYY-XXX",zone:"HT2",ztype:"GH/HT",beds:"3 beds",window:"Feb 3rd week",method:"Transplant seedling"},
+  {m:"February",crop:"Spider Plant",coh:"COH-SPD-YYYY-XXX",zone:"HT3",ztype:"GH/HT",beds:"3 beds",window:"Feb 4th week",method:"Direct sow"},
+  {m:"February",crop:"Sukuma Wiki",coh:"COH-SUK-YYYY-XXX",zone:"HT4",ztype:"GH/HT",beds:"4 beds",window:"Feb 2nd week",method:"Transplant seedling"},
+  {m:"February",crop:"Mustard Greens",coh:"COH-MUS-YYYY-XXX",zone:"HT5",ztype:"GH/HT",beds:"3 beds",window:"Feb 3rd week",method:"Transplant seedling"},
+  {m:"February",crop:"Cowpea Leaves",coh:"COH-COW-YYYY-XXX",zone:"HT6",ztype:"GH/HT",beds:"3 beds",window:"Feb 4th week",method:"Direct sow"},
+  {m:"February",crop:"Broccoli",coh:"COH-BRO-YYYY-XXX",zone:"B3",ztype:"FIELD",beds:"5 beds",window:"February",method:"Spring & Fall successions"},
+  {m:"February",crop:"Cabbage",coh:"COH-CAB-YYYY-XXX",zone:"B3",ztype:"FIELD",beds:"6 beds",window:"February",method:"Bi-monthly successions"},
+  {m:"February",crop:"Carrot",coh:"COH-CAR-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"February",method:"Bi-monthly successions"},
+  {m:"February",crop:"Radish",coh:"COH-RAD-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"February",method:"Monthly rapid rotation"},
+  {m:"February",crop:"Plantains / Cassava / Asparagus",coh:"COH-PER-YYYY-XXX",zone:"Z5",ztype:"FIELD (perennial)",beds:"Variable",window:"February",method:"Perennial; dormant winter"},
+  {m:"March",crop:"Spinach",coh:"COH-SPN-YYYY-XXX",zone:"GH1",ztype:"GH/HT",beds:"5 beds",window:"Mar 1st week",method:"Nursery, fast sprout"},
+  {m:"March",crop:"Lettuce",coh:"COH-LET-YYYY-XXX",zone:"GH2",ztype:"GH/HT",beds:"5 beds",window:"Mar 1st week",method:"Nursery, fast sprout"},
+  {m:"March",crop:"Mchicha",coh:"COH-MCH-YYYY-XXX",zone:"GH4",ztype:"GH/HT",beds:"4 beds",window:"Mar 2nd week",method:"Direct sow"},
+  {m:"March",crop:"Kale",coh:"COH-KAL-YYYY-XXX",zone:"HT1",ztype:"GH/HT",beds:"4 beds",window:"Mar 2nd week",method:"Nursery, fast sprout"},
+  {m:"March",crop:"Swiss Chard",coh:"COH-CHD-YYYY-XXX",zone:"HT2",ztype:"GH/HT",beds:"3 beds",window:"Mar 3rd week",method:"Transplant seedling"},
+  {m:"March",crop:"Spider Plant",coh:"COH-SPD-YYYY-XXX",zone:"HT3",ztype:"GH/HT",beds:"3 beds",window:"Mar 4th week",method:"Direct sow"},
+  {m:"March",crop:"Sukuma Wiki",coh:"COH-SUK-YYYY-XXX",zone:"HT4",ztype:"GH/HT",beds:"4 beds",window:"Mar 2nd week",method:"Transplant seedling"},
+  {m:"March",crop:"Mustard Greens",coh:"COH-MUS-YYYY-XXX",zone:"HT5",ztype:"GH/HT",beds:"3 beds",window:"Mar 3rd week",method:"Transplant seedling"},
+  {m:"March",crop:"Cowpea Leaves",coh:"COH-COW-YYYY-XXX",zone:"HT6",ztype:"GH/HT",beds:"3 beds",window:"Mar 4th week",method:"Direct sow"},
+  {m:"March",crop:"Field Greens",coh:"COH-[CRP]-YYYY-XXX",zone:"B2",ztype:"FIELD",beds:"3–5 beds",window:"March",method:"Seasonal field greens"},
+  {m:"March",crop:"Broccoli",coh:"COH-BRO-YYYY-XXX",zone:"B3",ztype:"FIELD",beds:"5 beds",window:"March",method:"Spring & Fall successions"},
+  {m:"March",crop:"Cauliflower",coh:"COH-CAU-YYYY-XXX",zone:"B3",ztype:"FIELD",beds:"4 beds",window:"March",method:"Cool-season successions"},
+  {m:"March",crop:"Onion",coh:"COH-ONI-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"4 beds",window:"March",method:"Main-season plantings"},
+  {m:"March",crop:"Radish",coh:"COH-RAD-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"March",method:"Monthly rapid rotation"},
+  {m:"March",crop:"Plantains / Cassava / Asparagus",coh:"COH-PER-YYYY-XXX",zone:"Z5",ztype:"FIELD (perennial)",beds:"Variable",window:"March",method:"Perennial; dormant winter"},
+  {m:"April",crop:"Spinach",coh:"COH-SPN-YYYY-XXX",zone:"GH1",ztype:"GH/HT",beds:"5 beds",window:"Apr 1st week",method:"Nursery, fast sprout"},
+  {m:"April",crop:"Lettuce",coh:"COH-LET-YYYY-XXX",zone:"GH2",ztype:"GH/HT",beds:"5 beds",window:"Apr 1st week",method:"Nursery, fast sprout"},
+  {m:"April",crop:"Mchicha",coh:"COH-MCH-YYYY-XXX",zone:"GH4",ztype:"GH/HT",beds:"4 beds",window:"Apr 2nd week",method:"Direct sow"},
+  {m:"April",crop:"Kale",coh:"COH-KAL-YYYY-XXX",zone:"HT1",ztype:"GH/HT",beds:"4 beds",window:"Apr 2nd week",method:"Nursery, fast sprout"},
+  {m:"April",crop:"Swiss Chard",coh:"COH-CHD-YYYY-XXX",zone:"HT2",ztype:"GH/HT",beds:"3 beds",window:"Apr 3rd week",method:"Transplant seedling"},
+  {m:"April",crop:"Spider Plant",coh:"COH-SPD-YYYY-XXX",zone:"HT3",ztype:"GH/HT",beds:"3 beds",window:"Apr 4th week",method:"Direct sow"},
+  {m:"April",crop:"Sukuma Wiki",coh:"COH-SUK-YYYY-XXX",zone:"HT4",ztype:"GH/HT",beds:"4 beds",window:"Apr 2nd week",method:"Transplant seedling"},
+  {m:"April",crop:"Mustard Greens",coh:"COH-MUS-YYYY-XXX",zone:"HT5",ztype:"GH/HT",beds:"3 beds",window:"Apr 3rd week",method:"Transplant seedling"},
+  {m:"April",crop:"Cowpea Leaves",coh:"COH-COW-YYYY-XXX",zone:"HT6",ztype:"GH/HT",beds:"3 beds",window:"Apr 4th week",method:"Direct sow"},
+  {m:"April",crop:"Tomato",coh:"COH-TOM-YYYY-XXX",zone:"B1",ztype:"FIELD",beds:"11 beds",window:"April",method:"Spring / Post-Frost Window"},
+  {m:"April",crop:"Field Greens",coh:"COH-[CRP]-YYYY-XXX",zone:"B2",ztype:"FIELD",beds:"3–5 beds",window:"April",method:"Seasonal field greens"},
+  {m:"April",crop:"Cabbage",coh:"COH-CAB-YYYY-XXX",zone:"B3",ztype:"FIELD",beds:"6 beds",window:"April",method:"Bi-monthly successions"},
+  {m:"April",crop:"Carrot",coh:"COH-CAR-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"April",method:"Bi-monthly successions"},
+  {m:"April",crop:"Onion",coh:"COH-ONI-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"4 beds",window:"April",method:"Main-season plantings"},
+  {m:"April",crop:"Radish",coh:"COH-RAD-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"April",method:"Monthly rapid rotation"},
+  {m:"April",crop:"Potato",coh:"COH-POT-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"6 beds",window:"April",method:"Spring planting window"},
+  {m:"April",crop:"Plantains / Cassava / Asparagus",coh:"COH-PER-YYYY-XXX",zone:"Z5",ztype:"FIELD (perennial)",beds:"Variable",window:"April",method:"Perennial; dormant winter"},
+  {m:"May",crop:"Spinach",coh:"COH-SPN-YYYY-XXX",zone:"GH1",ztype:"GH/HT",beds:"5 beds",window:"May 1st week",method:"Nursery, fast sprout"},
+  {m:"May",crop:"Lettuce",coh:"COH-LET-YYYY-XXX",zone:"GH2",ztype:"GH/HT",beds:"5 beds",window:"May 1st week",method:"Nursery, fast sprout"},
+  {m:"May",crop:"Mchicha",coh:"COH-MCH-YYYY-XXX",zone:"GH4",ztype:"GH/HT",beds:"4 beds",window:"May 2nd week",method:"Direct sow"},
+  {m:"May",crop:"Kale",coh:"COH-KAL-YYYY-XXX",zone:"HT1",ztype:"GH/HT",beds:"4 beds",window:"May 2nd week",method:"Nursery, fast sprout"},
+  {m:"May",crop:"Swiss Chard",coh:"COH-CHD-YYYY-XXX",zone:"HT2",ztype:"GH/HT",beds:"3 beds",window:"May 3rd week",method:"Transplant seedling"},
+  {m:"May",crop:"Spider Plant",coh:"COH-SPD-YYYY-XXX",zone:"HT3",ztype:"GH/HT",beds:"3 beds",window:"May 4th week",method:"Direct sow"},
+  {m:"May",crop:"Sukuma Wiki",coh:"COH-SUK-YYYY-XXX",zone:"HT4",ztype:"GH/HT",beds:"4 beds",window:"May 2nd week",method:"Transplant seedling"},
+  {m:"May",crop:"Mustard Greens",coh:"COH-MUS-YYYY-XXX",zone:"HT5",ztype:"GH/HT",beds:"3 beds",window:"May 3rd week",method:"Transplant seedling"},
+  {m:"May",crop:"Cowpea Leaves",coh:"COH-COW-YYYY-XXX",zone:"HT6",ztype:"GH/HT",beds:"3 beds",window:"May 4th week",method:"Direct sow"},
+  {m:"May",crop:"Tomato",coh:"COH-TOM-YYYY-XXX",zone:"B1",ztype:"FIELD",beds:"11 beds",window:"May",method:"Spring / Post-Frost Window"},
+  {m:"May",crop:"Bell Pepper",coh:"COH-PEP-YYYY-XXX",zone:"B1",ztype:"FIELD",beds:"8 beds",window:"May",method:"Warm Season Window"},
+  {m:"May",crop:"Eggplant",coh:"COH-EGG-YYYY-XXX",zone:"B1",ztype:"FIELD",beds:"6 beds",window:"May",method:"Warm Season Window"},
+  {m:"May",crop:"Okra",coh:"COH-OKR-YYYY-XXX",zone:"B1",ztype:"FIELD",beds:"5 beds",window:"May",method:"Warm Season Window"},
+  {m:"May",crop:"Field Greens",coh:"COH-[CRP]-YYYY-XXX",zone:"B2",ztype:"FIELD",beds:"3–5 beds",window:"May",method:"Seasonal field greens"},
+  {m:"May",crop:"Cucumber / Squash",coh:"COH-CUC-YYYY-XXX",zone:"B3",ztype:"FIELD",beds:"5 beds",window:"May",method:"Summer successions"},
+  {m:"May",crop:"Radish",coh:"COH-RAD-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"May",method:"Monthly rapid rotation"},
+  {m:"May",crop:"Potato",coh:"COH-POT-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"6 beds",window:"May",method:"Spring planting window"},
+  {m:"May",crop:"Plantains / Cassava / Asparagus",coh:"COH-PER-YYYY-XXX",zone:"Z5",ztype:"FIELD (perennial)",beds:"Variable",window:"May",method:"Perennial; dormant winter"},
+  {m:"June",crop:"Spinach",coh:"COH-SPN-YYYY-XXX",zone:"GH1",ztype:"GH/HT",beds:"5 beds",window:"Jun 1st week",method:"Nursery, fast sprout"},
+  {m:"June",crop:"Lettuce",coh:"COH-LET-YYYY-XXX",zone:"GH2",ztype:"GH/HT",beds:"5 beds",window:"Jun 1st week",method:"Nursery, fast sprout"},
+  {m:"June",crop:"Mchicha",coh:"COH-MCH-YYYY-XXX",zone:"GH4",ztype:"GH/HT",beds:"4 beds",window:"Jun 2nd week",method:"Direct sow"},
+  {m:"June",crop:"Kale",coh:"COH-KAL-YYYY-XXX",zone:"HT1",ztype:"GH/HT",beds:"4 beds",window:"Jun 2nd week",method:"Nursery, fast sprout"},
+  {m:"June",crop:"Swiss Chard",coh:"COH-CHD-YYYY-XXX",zone:"HT2",ztype:"GH/HT",beds:"3 beds",window:"Jun 3rd week",method:"Transplant seedling"},
+  {m:"June",crop:"Spider Plant",coh:"COH-SPD-YYYY-XXX",zone:"HT3",ztype:"GH/HT",beds:"3 beds",window:"Jun 4th week",method:"Direct sow"},
+  {m:"June",crop:"Sukuma Wiki",coh:"COH-SUK-YYYY-XXX",zone:"HT4",ztype:"GH/HT",beds:"4 beds",window:"Jun 2nd week",method:"Transplant seedling"},
+  {m:"June",crop:"Mustard Greens",coh:"COH-MUS-YYYY-XXX",zone:"HT5",ztype:"GH/HT",beds:"3 beds",window:"Jun 3rd week",method:"Transplant seedling"},
+  {m:"June",crop:"Cowpea Leaves",coh:"COH-COW-YYYY-XXX",zone:"HT6",ztype:"GH/HT",beds:"3 beds",window:"Jun 4th week",method:"Direct sow"},
+  {m:"June",crop:"Bell Pepper",coh:"COH-PEP-YYYY-XXX",zone:"B1",ztype:"FIELD",beds:"8 beds",window:"June",method:"Warm Season Window"},
+  {m:"June",crop:"Eggplant",coh:"COH-EGG-YYYY-XXX",zone:"B1",ztype:"FIELD",beds:"6 beds",window:"June",method:"Warm Season Window"},
+  {m:"June",crop:"Okra",coh:"COH-OKR-YYYY-XXX",zone:"B1",ztype:"FIELD",beds:"5 beds",window:"June",method:"Warm Season Window"},
+  {m:"June",crop:"Field Greens",coh:"COH-[CRP]-YYYY-XXX",zone:"B2",ztype:"FIELD",beds:"3–5 beds",window:"June",method:"Seasonal field greens"},
+  {m:"June",crop:"Carrot",coh:"COH-CAR-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"June",method:"Bi-monthly successions"},
+  {m:"June",crop:"Radish",coh:"COH-RAD-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"June",method:"Monthly rapid rotation"},
+  {m:"June",crop:"Plantains / Cassava / Asparagus",coh:"COH-PER-YYYY-XXX",zone:"Z5",ztype:"FIELD (perennial)",beds:"Variable",window:"June",method:"Perennial; dormant winter"},
+  {m:"July",crop:"Spinach",coh:"COH-SPN-YYYY-XXX",zone:"GH1",ztype:"GH/HT",beds:"5 beds",window:"Jul 1st week",method:"Nursery, fast sprout"},
+  {m:"July",crop:"Lettuce",coh:"COH-LET-YYYY-XXX",zone:"GH2",ztype:"GH/HT",beds:"5 beds",window:"Jul 1st week",method:"Nursery, fast sprout"},
+  {m:"July",crop:"Mchicha",coh:"COH-MCH-YYYY-XXX",zone:"GH4",ztype:"GH/HT",beds:"4 beds",window:"Jul 2nd week",method:"Direct sow"},
+  {m:"July",crop:"Kale",coh:"COH-KAL-YYYY-XXX",zone:"HT1",ztype:"GH/HT",beds:"4 beds",window:"Jul 2nd week",method:"Nursery, fast sprout"},
+  {m:"July",crop:"Swiss Chard",coh:"COH-CHD-YYYY-XXX",zone:"HT2",ztype:"GH/HT",beds:"3 beds",window:"Jul 3rd week",method:"Transplant seedling"},
+  {m:"July",crop:"Spider Plant",coh:"COH-SPD-YYYY-XXX",zone:"HT3",ztype:"GH/HT",beds:"3 beds",window:"Jul 4th week",method:"Direct sow"},
+  {m:"July",crop:"Sukuma Wiki",coh:"COH-SUK-YYYY-XXX",zone:"HT4",ztype:"GH/HT",beds:"4 beds",window:"Jul 2nd week",method:"Transplant seedling"},
+  {m:"July",crop:"Mustard Greens",coh:"COH-MUS-YYYY-XXX",zone:"HT5",ztype:"GH/HT",beds:"3 beds",window:"Jul 3rd week",method:"Transplant seedling"},
+  {m:"July",crop:"Cowpea Leaves",coh:"COH-COW-YYYY-XXX",zone:"HT6",ztype:"GH/HT",beds:"3 beds",window:"Jul 4th week",method:"Direct sow"},
+  {m:"July",crop:"Field Greens",coh:"COH-[CRP]-YYYY-XXX",zone:"B2",ztype:"FIELD",beds:"3–5 beds",window:"July",method:"Seasonal field greens"},
+  {m:"July",crop:"Cucumber / Squash",coh:"COH-CUC-YYYY-XXX",zone:"B3",ztype:"FIELD",beds:"5 beds",window:"July",method:"Summer successions"},
+  {m:"July",crop:"Radish",coh:"COH-RAD-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"July",method:"Monthly rapid rotation"},
+  {m:"July",crop:"Plantains / Cassava / Asparagus",coh:"COH-PER-YYYY-XXX",zone:"Z5",ztype:"FIELD (perennial)",beds:"Variable",window:"July",method:"Perennial; dormant winter"},
+  {m:"August",crop:"Spinach",coh:"COH-SPN-YYYY-XXX",zone:"GH1",ztype:"GH/HT",beds:"5 beds",window:"Aug 1st week",method:"Nursery, fast sprout"},
+  {m:"August",crop:"Lettuce",coh:"COH-LET-YYYY-XXX",zone:"GH2",ztype:"GH/HT",beds:"5 beds",window:"Aug 1st week",method:"Nursery, fast sprout"},
+  {m:"August",crop:"Mchicha",coh:"COH-MCH-YYYY-XXX",zone:"GH4",ztype:"GH/HT",beds:"4 beds",window:"Aug 2nd week",method:"Direct sow"},
+  {m:"August",crop:"Kale",coh:"COH-KAL-YYYY-XXX",zone:"HT1",ztype:"GH/HT",beds:"4 beds",window:"Aug 2nd week",method:"Nursery, fast sprout"},
+  {m:"August",crop:"Swiss Chard",coh:"COH-CHD-YYYY-XXX",zone:"HT2",ztype:"GH/HT",beds:"3 beds",window:"Aug 3rd week",method:"Transplant seedling"},
+  {m:"August",crop:"Spider Plant",coh:"COH-SPD-YYYY-XXX",zone:"HT3",ztype:"GH/HT",beds:"3 beds",window:"Aug 4th week",method:"Direct sow"},
+  {m:"August",crop:"Sukuma Wiki",coh:"COH-SUK-YYYY-XXX",zone:"HT4",ztype:"GH/HT",beds:"4 beds",window:"Aug 2nd week",method:"Transplant seedling"},
+  {m:"August",crop:"Mustard Greens",coh:"COH-MUS-YYYY-XXX",zone:"HT5",ztype:"GH/HT",beds:"3 beds",window:"Aug 3rd week",method:"Transplant seedling"},
+  {m:"August",crop:"Cowpea Leaves",coh:"COH-COW-YYYY-XXX",zone:"HT6",ztype:"GH/HT",beds:"3 beds",window:"Aug 4th week",method:"Direct sow"},
+  {m:"August",crop:"Field Greens",coh:"COH-[CRP]-YYYY-XXX",zone:"B2",ztype:"FIELD",beds:"3–5 beds",window:"August",method:"Seasonal field greens"},
+  {m:"August",crop:"Broccoli",coh:"COH-BRO-YYYY-XXX",zone:"B3",ztype:"FIELD",beds:"5 beds",window:"August",method:"Spring & Fall successions"},
+  {m:"August",crop:"Cabbage",coh:"COH-CAB-YYYY-XXX",zone:"B3",ztype:"FIELD",beds:"6 beds",window:"August",method:"Bi-monthly successions"},
+  {m:"August",crop:"Carrot",coh:"COH-CAR-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"August",method:"Bi-monthly successions"},
+  {m:"August",crop:"Radish",coh:"COH-RAD-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"August",method:"Monthly rapid rotation"},
+  {m:"August",crop:"Cover Crops",coh:"COH-CVR-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"Variable",window:"August",method:"Post-harvest soil restoration"},
+  {m:"August",crop:"Plantains / Cassava / Asparagus",coh:"COH-PER-YYYY-XXX",zone:"Z5",ztype:"FIELD (perennial)",beds:"Variable",window:"August",method:"Perennial; dormant winter"},
+  {m:"September",crop:"Spinach",coh:"COH-SPN-YYYY-XXX",zone:"GH1",ztype:"GH/HT",beds:"5 beds",window:"Sep 1st week",method:"Nursery, fast sprout"},
+  {m:"September",crop:"Lettuce",coh:"COH-LET-YYYY-XXX",zone:"GH2",ztype:"GH/HT",beds:"5 beds",window:"Sep 1st week",method:"Nursery, fast sprout"},
+  {m:"September",crop:"Mchicha",coh:"COH-MCH-YYYY-XXX",zone:"GH4",ztype:"GH/HT",beds:"4 beds",window:"Sep 2nd week",method:"Direct sow"},
+  {m:"September",crop:"Kale",coh:"COH-KAL-YYYY-XXX",zone:"HT1",ztype:"GH/HT",beds:"4 beds",window:"Sep 2nd week",method:"Nursery, fast sprout"},
+  {m:"September",crop:"Swiss Chard",coh:"COH-CHD-YYYY-XXX",zone:"HT2",ztype:"GH/HT",beds:"3 beds",window:"Sep 3rd week",method:"Transplant seedling"},
+  {m:"September",crop:"Spider Plant",coh:"COH-SPD-YYYY-XXX",zone:"HT3",ztype:"GH/HT",beds:"3 beds",window:"Sep 4th week",method:"Direct sow"},
+  {m:"September",crop:"Sukuma Wiki",coh:"COH-SUK-YYYY-XXX",zone:"HT4",ztype:"GH/HT",beds:"4 beds",window:"Sep 2nd week",method:"Transplant seedling"},
+  {m:"September",crop:"Mustard Greens",coh:"COH-MUS-YYYY-XXX",zone:"HT5",ztype:"GH/HT",beds:"3 beds",window:"Sep 3rd week",method:"Transplant seedling"},
+  {m:"September",crop:"Cowpea Leaves",coh:"COH-COW-YYYY-XXX",zone:"HT6",ztype:"GH/HT",beds:"3 beds",window:"Sep 4th week",method:"Direct sow"},
+  {m:"September",crop:"Field Greens",coh:"COH-[CRP]-YYYY-XXX",zone:"B2",ztype:"FIELD",beds:"3–5 beds",window:"September",method:"Seasonal field greens"},
+  {m:"September",crop:"Broccoli",coh:"COH-BRO-YYYY-XXX",zone:"B3",ztype:"FIELD",beds:"5 beds",window:"September",method:"Spring & Fall successions"},
+  {m:"September",crop:"Cauliflower",coh:"COH-CAU-YYYY-XXX",zone:"B3",ztype:"FIELD",beds:"4 beds",window:"September",method:"Cool-season successions"},
+  {m:"September",crop:"Radish",coh:"COH-RAD-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"September",method:"Monthly rapid rotation"},
+  {m:"September",crop:"Cover Crops",coh:"COH-CVR-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"Variable",window:"September",method:"Post-harvest soil restoration"},
+  {m:"September",crop:"Plantains / Cassava / Asparagus",coh:"COH-PER-YYYY-XXX",zone:"Z5",ztype:"FIELD (perennial)",beds:"Variable",window:"September",method:"Perennial; dormant winter"},
+  {m:"October",crop:"Spinach",coh:"COH-SPN-YYYY-XXX",zone:"GH1",ztype:"GH/HT",beds:"5 beds",window:"Oct 1st week",method:"Nursery, fast sprout"},
+  {m:"October",crop:"Lettuce",coh:"COH-LET-YYYY-XXX",zone:"GH2",ztype:"GH/HT",beds:"5 beds",window:"Oct 1st week",method:"Nursery, fast sprout"},
+  {m:"October",crop:"Mchicha",coh:"COH-MCH-YYYY-XXX",zone:"GH4",ztype:"GH/HT",beds:"4 beds",window:"Oct 2nd week",method:"Direct sow"},
+  {m:"October",crop:"Kale",coh:"COH-KAL-YYYY-XXX",zone:"HT1",ztype:"GH/HT",beds:"4 beds",window:"Oct 2nd week",method:"Nursery, fast sprout"},
+  {m:"October",crop:"Swiss Chard",coh:"COH-CHD-YYYY-XXX",zone:"HT2",ztype:"GH/HT",beds:"3 beds",window:"Oct 3rd week",method:"Transplant seedling"},
+  {m:"October",crop:"Spider Plant",coh:"COH-SPD-YYYY-XXX",zone:"HT3",ztype:"GH/HT",beds:"3 beds",window:"Oct 4th week",method:"Direct sow"},
+  {m:"October",crop:"Sukuma Wiki",coh:"COH-SUK-YYYY-XXX",zone:"HT4",ztype:"GH/HT",beds:"4 beds",window:"Oct 2nd week",method:"Transplant seedling"},
+  {m:"October",crop:"Mustard Greens",coh:"COH-MUS-YYYY-XXX",zone:"HT5",ztype:"GH/HT",beds:"3 beds",window:"Oct 3rd week",method:"Transplant seedling"},
+  {m:"October",crop:"Cowpea Leaves",coh:"COH-COW-YYYY-XXX",zone:"HT6",ztype:"GH/HT",beds:"3 beds",window:"Oct 4th week",method:"Direct sow"},
+  {m:"October",crop:"Field Greens",coh:"COH-[CRP]-YYYY-XXX",zone:"B2",ztype:"FIELD",beds:"3–5 beds",window:"October",method:"Seasonal field greens"},
+  {m:"October",crop:"Cabbage",coh:"COH-CAB-YYYY-XXX",zone:"B3",ztype:"FIELD",beds:"6 beds",window:"October",method:"Bi-monthly successions"},
+  {m:"October",crop:"Carrot",coh:"COH-CAR-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"October",method:"Bi-monthly successions"},
+  {m:"October",crop:"Radish",coh:"COH-RAD-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"October",method:"Monthly rapid rotation"},
+  {m:"October",crop:"Plantains / Cassava / Asparagus",coh:"COH-PER-YYYY-XXX",zone:"Z5",ztype:"FIELD (perennial)",beds:"Variable",window:"October",method:"Perennial; dormant winter"},
+  {m:"November",crop:"Spinach",coh:"COH-SPN-YYYY-XXX",zone:"GH1",ztype:"GH/HT",beds:"5 beds",window:"Nov 1st week",method:"Nursery, fast sprout"},
+  {m:"November",crop:"Lettuce",coh:"COH-LET-YYYY-XXX",zone:"GH2",ztype:"GH/HT",beds:"5 beds",window:"Nov 1st week",method:"Nursery, fast sprout"},
+  {m:"November",crop:"Mchicha",coh:"COH-MCH-YYYY-XXX",zone:"GH4",ztype:"GH/HT",beds:"4 beds",window:"Nov 2nd week",method:"Direct sow"},
+  {m:"November",crop:"Kale",coh:"COH-KAL-YYYY-XXX",zone:"HT1",ztype:"GH/HT",beds:"4 beds",window:"Nov 2nd week",method:"Nursery, fast sprout"},
+  {m:"November",crop:"Swiss Chard",coh:"COH-CHD-YYYY-XXX",zone:"HT2",ztype:"GH/HT",beds:"3 beds",window:"Nov 3rd week",method:"Transplant seedling"},
+  {m:"November",crop:"Spider Plant",coh:"COH-SPD-YYYY-XXX",zone:"HT3",ztype:"GH/HT",beds:"3 beds",window:"Nov 4th week",method:"Direct sow"},
+  {m:"November",crop:"Sukuma Wiki",coh:"COH-SUK-YYYY-XXX",zone:"HT4",ztype:"GH/HT",beds:"4 beds",window:"Nov 2nd week",method:"Transplant seedling"},
+  {m:"November",crop:"Mustard Greens",coh:"COH-MUS-YYYY-XXX",zone:"HT5",ztype:"GH/HT",beds:"3 beds",window:"Nov 3rd week",method:"Transplant seedling"},
+  {m:"November",crop:"Cowpea Leaves",coh:"COH-COW-YYYY-XXX",zone:"HT6",ztype:"GH/HT",beds:"3 beds",window:"Nov 4th week",method:"Direct sow"},
+  {m:"November",crop:"Radish",coh:"COH-RAD-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"2 beds",window:"November",method:"Monthly rapid rotation"},
+  {m:"November",crop:"Cover Crops",coh:"COH-CVR-YYYY-XXX",zone:"B4",ztype:"FIELD",beds:"Variable",window:"November",method:"Post-harvest soil restoration"},
+  {m:"November",crop:"Plantains / Cassava / Asparagus",coh:"COH-PER-YYYY-XXX",zone:"Z5",ztype:"FIELD (perennial)",beds:"Variable",window:"November",method:"Perennial; dormant winter"},
+  {m:"December",crop:"Spinach",coh:"COH-SPN-YYYY-XXX",zone:"GH1",ztype:"GH/HT",beds:"5 beds",window:"Dec 1st week",method:"Nursery, fast sprout"},
+  {m:"December",crop:"Lettuce",coh:"COH-LET-YYYY-XXX",zone:"GH2",ztype:"GH/HT",beds:"5 beds",window:"Dec 1st week",method:"Nursery, fast sprout"},
+  {m:"December",crop:"Mchicha",coh:"COH-MCH-YYYY-XXX",zone:"GH4",ztype:"GH/HT",beds:"4 beds",window:"Dec 2nd week",method:"Direct sow"},
+  {m:"December",crop:"Kale",coh:"COH-KAL-YYYY-XXX",zone:"HT1",ztype:"GH/HT",beds:"4 beds",window:"Dec 2nd week",method:"Nursery, fast sprout"},
+  {m:"December",crop:"Swiss Chard",coh:"COH-CHD-YYYY-XXX",zone:"HT2",ztype:"GH/HT",beds:"3 beds",window:"Dec 3rd week",method:"Transplant seedling"},
+  {m:"December",crop:"Spider Plant",coh:"COH-SPD-YYYY-XXX",zone:"HT3",ztype:"GH/HT",beds:"3 beds",window:"Dec 4th week",method:"Direct sow"},
+  {m:"December",crop:"Sukuma Wiki",coh:"COH-SUK-YYYY-XXX",zone:"HT4",ztype:"GH/HT",beds:"4 beds",window:"Dec 2nd week",method:"Transplant seedling"},
+  {m:"December",crop:"Mustard Greens",coh:"COH-MUS-YYYY-XXX",zone:"HT5",ztype:"GH/HT",beds:"3 beds",window:"Dec 3rd week",method:"Transplant seedling"},
+  {m:"December",crop:"Cowpea Leaves",coh:"COH-COW-YYYY-XXX",zone:"HT6",ztype:"GH/HT",beds:"3 beds",window:"Dec 4th week",method:"Direct sow"},
+  {m:"December",crop:"Plantains / Cassava / Asparagus",coh:"COH-PER-YYYY-XXX",zone:"Z5",ztype:"FIELD (perennial)",beds:"Variable",window:"December",method:"Perennial; dormant winter"}
+];
+
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+const ZONE_INFO = {
+  GH1: { group: "Greenhouse", full: "Greenhouse — Bay 1" },
+  GH2: { group: "Greenhouse", full: "Greenhouse — Bay 2" },
+  GH4: { group: "Greenhouse", full: "Greenhouse — Bay 4" },
+  HT1: { group: "High Tunnel", full: "High Tunnel — Bay 1" },
+  HT2: { group: "High Tunnel", full: "High Tunnel — Bay 2" },
+  HT3: { group: "High Tunnel", full: "High Tunnel — Bay 3" },
+  HT4: { group: "High Tunnel", full: "High Tunnel — Bay 4" },
+  HT5: { group: "High Tunnel", full: "High Tunnel — Bay 5" },
+  HT6: { group: "High Tunnel", full: "High Tunnel — Bay 6" },
+  B1: { group: "Open Field", full: "Open Field — Block 1" },
+  B2: { group: "Open Field", full: "Open Field — Block 2" },
+  B3: { group: "Open Field", full: "Open Field — Block 3" },
+  B4: { group: "Open Field", full: "Open Field — Block 4" },
+  Z5: { group: "Perennial Ground", full: "Perennial Ground — Zone 5" },
 };
 
-function monthIndexFromDateStr(s){ return s ? parseInt(s.slice(5,7),10) - 1 : null; }
+// Schematic (not-to-scale) layout of the ranch used for the field map.
+// x, y, w, h are in SVG viewBox units (0-640 wide, 0-320 tall).
+const ZONE_LAYOUT = {
+  GH1: { x: 20, y: 20, w: 70, h: 55 },
+  GH2: { x: 100, y: 20, w: 70, h: 55 },
+  GH4: { x: 180, y: 20, w: 70, h: 55 },
+  HT1: { x: 20, y: 95, w: 44, h: 55 },
+  HT2: { x: 74, y: 95, w: 44, h: 55 },
+  HT3: { x: 128, y: 95, w: 44, h: 55 },
+  HT4: { x: 182, y: 95, w: 44, h: 55 },
+  HT5: { x: 236, y: 95, w: 44, h: 55 },
+  HT6: { x: 290, y: 95, w: 44, h: 55 },
+  B1: { x: 20, y: 165, w: 155, h: 65 },
+  B2: { x: 190, y: 165, w: 145, h: 65 },
+  B3: { x: 20, y: 240, w: 155, h: 60 },
+  B4: { x: 190, y: 240, w: 145, h: 60 },
+  Z5: { x: 355, y: 20, w: 265, h: 280 },
+};
 
-function byMonth(){
-  const map = {};
-  MONTHS.forEach((_, i) => map[i] = []);
-  COHORTS.forEach(c => {
-    const mi = monthIndexFromDateStr(c.planting_date);
-    if (mi !== null) map[mi].push(c);
+const GROUP_ORDER = ["Greenhouse", "High Tunnel", "Open Field", "Perennial Ground"];
+const GROUP_ICON = { "Greenhouse": "home", "High Tunnel": "sun", "Open Field": "leaf", "Perennial Ground": "treePine" };
+const GROUP_COLOR = { "Greenhouse": "#3C5A3E", "High Tunnel": "#8A6D2F", "Open Field": "#5C4A2E", "Perennial Ground": "#4A5A3C" };
+
+// Small visual identifiers per crop, purely decorative — helps the list get scanned at a glance.
+const CROP_ICON = {
+  "Bell Pepper": "🫑", "Broccoli": "🥦", "Cabbage": "🥬", "Carrot": "🥕",
+  "Cauliflower": "🥦", "Cover Crops": "🌾", "Cowpea Leaves": "🌿",
+  "Cucumber / Squash": "🥒", "Eggplant": "🍆", "Field Greens": "🍃",
+  "Kale": "🥬", "Lettuce": "🥬", "Mchicha": "🌿", "Mustard Greens": "🍃",
+  "Okra": "🌱", "Onion": "🧅", "Plantains / Cassava / Asparagus": "🌴",
+  "Potato": "🥔", "Radish": "🌱", "Spider Plant": "🌿", "Spinach": "🥬",
+  "Sukuma Wiki": "🍃", "Swiss Chard": "🍃", "Tomato": "🍅",
+};
+
+// Seasonal accent colors used as a thin identifier stripe on month cards — not a full
+// background swap, to keep the cards readable and consistent with the paper/ledger look.
+const MONTH_ACCENT = {
+  January: "#4A6FA5", February: "#4A6FA5", December: "#4A6FA5",   // winter — blue
+  March: "#3C8D4A", April: "#3C8D4A", May: "#3C8D4A",             // spring — green
+  June: "#C9A23F", July: "#C9A23F", August: "#C9A23F",            // summer — gold
+  September: "#C97A3F", October: "#C97A3F", November: "#C97A3F", // fall — orange
+};
+
+const GLOSSARY = [
+  { term: "GH", meaning: "Greenhouse — an enclosed, climate-controlled growing structure." },
+  { term: "HT", meaning: "High Tunnel — a covered but unheated growing structure, warmer than open field." },
+  { term: "FIELD", meaning: "Open Field — crops grown outdoors, directly in ranch soil." },
+  { term: "PCS", meaning: "Planting Calendar System — this planning tool itself. It shows what to plant, where, and when." },
+  { term: "Cohort code", meaning: "A batch ID for one planting round, e.g. COH-SPN-2026-001 means a Spinach cohort planted in 2026, batch 1. The last digits are filled in when that round is actually planted." },
+  { term: "Ranch_AAB", meaning: "The ranch's field operations system, where the manager checks real bed availability and logs the actual planting work." },
+];
+
+function weekRank(windowText) {
+  const t = windowText.toLowerCase();
+  if (t.includes("1st week")) return 0;
+  if (t.includes("2nd week")) return 1;
+  if (t.includes("3rd week")) return 2;
+  if (t.includes("4th week")) return 3;
+  return 4; // whole-month field windows
+}
+
+function bedsNumber(bedsText) {
+  const m = String(bedsText).match(/\d+/);
+  return m ? parseInt(m[0], 10) : 0;
+}
+
+function esc(str) {
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/* ---------- App state ---------- */
+const today = new Date();
+const currentMonth = MONTHS[today.getMonth()];
+const nextMonth = MONTHS[(today.getMonth() + 1) % 12];
+
+const state = {
+  selectedMonth: null,
+  selectedCrop: null, // index into monthDetail items list (by crop name+zone key), we'll store full object
+  showGlossary: false,
+  calendarData: [],
+  loadState: "loading", // 'loading' | 'live' | 'fallback'
+  lastSynced: null,
+  mapZoneFilter: null,
+};
+
+function loadSheet() {
+  state.loadState = "loading";
+  render();
+  const bustUrl = SHEET_CSV_URL + (SHEET_CSV_URL.includes("?") ? "&" : "?") + "cb=" + Date.now();
+  fetch(bustUrl)
+    .then((res) => {
+      if (!res.ok) throw new Error("Sheet request failed: " + res.status);
+      return res.text();
+    })
+    .then((csvText) => {
+      const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+      const rows = parsed.data.map(normalizeRow).filter((r) => r.m && r.crop);
+      if (rows.length === 0) throw new Error("Sheet returned no rows");
+      state.calendarData = rows;
+      state.loadState = "live";
+      state.lastSynced = new Date();
+      render();
+    })
+    .catch(() => {
+      state.calendarData = SAMPLE_DATA;
+      state.loadState = "fallback";
+      state.lastSynced = new Date();
+      render();
+    });
+}
+
+/* ---------- Derived data ---------- */
+function computeMonthStats() {
+  const stats = {};
+  MONTHS.forEach((m) => {
+    const items = state.calendarData.filter((r) => r.m === m);
+    const protectedCount = items.filter((r) => r.ztype === "GH/HT").length;
+    const fieldCount = items.length - protectedCount;
+    const totalBeds = items.reduce((sum, r) => sum + bedsNumber(r.beds), 0);
+    stats[m] = { items, protectedCount, fieldCount, totalBeds };
   });
-  return map;
+  return stats;
 }
 
-const state = { monthIdx: null, cohort: null };
-const grouped = byMonth();
-
-function fmtDate(s){
-  if (!s) return '—';
-  const d = new Date(s + 'T00:00:00');
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+function computeZoneStats(monthDetail) {
+  const stats = {};
+  Object.keys(ZONE_INFO).forEach((z) => { stats[z] = { count: 0, beds: 0 }; });
+  if (monthDetail) {
+    monthDetail.items.forEach((item) => {
+      if (!stats[item.zone]) stats[item.zone] = { count: 0, beds: 0 };
+      stats[item.zone].count += 1;
+      stats[item.zone].beds += bedsNumber(item.beds);
+    });
+  }
+  return stats;
 }
 
-function render(){
-  const root = document.getElementById('root');
-  const today = new Date();
-  const curM = today.getMonth();
-  const curCohorts = grouped[curM];
+function computeGroupedDetail(monthDetail, zoneFilter) {
+  if (!monthDetail) return [];
+  const sourceItems = zoneFilter ? monthDetail.items.filter((i) => i.zone === zoneFilter) : monthDetail.items;
+  const byGroup = {};
+  sourceItems.forEach((item) => {
+    const g = (ZONE_INFO[item.zone] && ZONE_INFO[item.zone].group) || "Open Field";
+    if (!byGroup[g]) byGroup[g] = [];
+    byGroup[g].push(item);
+  });
+  return GROUP_ORDER.filter((g) => byGroup[g]).map((g) => ({ group: g, items: byGroup[g] }));
+}
 
-  root.innerHTML = `
+/* ---------- Render pieces ---------- */
+function renderFieldMap(zoneStats, selectedZone) {
+  let rects = "";
+  Object.entries(ZONE_LAYOUT).forEach(([zone, pos]) => {
+    const group = (ZONE_INFO[zone] && ZONE_INFO[zone].group) || "Open Field";
+    const color = GROUP_COLOR[group] || "#3C5A3E";
+    const stat = zoneStats[zone] || { count: 0, beds: 0 };
+    const active = stat.count > 0;
+    const isSelected = selectedZone === zone;
+    rects += `
+      <g data-action="zone-click" data-zone="${esc(zone)}" style="cursor:pointer">
+        <rect x="${pos.x}" y="${pos.y}" width="${pos.w}" height="${pos.h}" rx="5"
+          fill="${color}"
+          fill-opacity="${active ? (isSelected ? 0.95 : 0.75) : 0.12}"
+          stroke="${isSelected ? "#262F1F" : color}"
+          stroke-width="${isSelected ? 2.5 : 1}"
+          stroke-opacity="${active ? 1 : 0.4}" />
+        <text x="${pos.x + pos.w / 2}" y="${pos.y + pos.h / 2 - (active ? 6 : 0)}"
+          text-anchor="middle" dominant-baseline="middle"
+          font-size="${pos.w > 100 ? 15 : 12}" font-weight="700"
+          fill="${active ? "#FBF8EF" : "#5B5942"}"
+          font-family="'IBM Plex Mono', monospace">${esc(zone)}</text>
+        ${active ? `<text x="${pos.x + pos.w / 2}" y="${pos.y + pos.h / 2 + 12}"
+          text-anchor="middle" dominant-baseline="middle"
+          font-size="10.5" fill="#FBF8EF" fill-opacity="0.9">${stat.count} ${stat.count === 1 ? "crop" : "crops"} · ${stat.beds} beds</text>` : ""}
+      </g>`;
+  });
+
+  let legend = GROUP_ORDER.map((g) => `
+    <div class="item"><span class="swatch" style="background:${GROUP_COLOR[g]}"></span>${esc(g)}</div>
+  `).join("");
+
+  return `
+    <div>
+      <div class="map-caption">Field map — where this month's planting happens</div>
+      <svg viewBox="0 0 640 320" style="width:100%;height:auto;display:block">
+        <rect x="0" y="0" width="640" height="320" rx="6" fill="#E7E2CE" />
+        ${rects}
+      </svg>
+      <div class="map-legend">
+        ${legend}
+        <div class="note">Faded = nothing scheduled there this month · tap a block to filter the list below</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDetailRow(iconName, label, value, sub, accentColor) {
+  return `
+    <div class="detail-row">
+      <div class="detail-icon" style="color:${accentColor || "#3C5A3E"}">${icon(iconName, 17)}</div>
+      <div>
+        <div class="detail-label">${esc(label)}</div>
+        <div class="detail-value">${esc(value)}</div>
+        ${sub ? `<div class="detail-sub">${esc(sub)}</div>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function render() {
+  const monthStats = computeMonthStats();
+  const dueNowItems = monthStats[currentMonth]
+    ? [...monthStats[currentMonth].items].sort((a, b) => weekRank(a.window) - weekRank(b.window))
+    : [];
+
+  const monthDetail = state.selectedMonth ? monthStats[state.selectedMonth] : null;
+  const zoneStats = computeZoneStats(monthDetail);
+  const groupedDetail = computeGroupedDetail(monthDetail, state.mapZoneFilter);
+
+  let html = `
     <div class="wrap">
-      <div class="top">
+      <div class="header-row">
         <div>
           <div class="title-row">
-            <span style="font-size:24px">🌱</span>
+            <span class="icon" style="width:28px;height:28px;color:#3C5A3E">${ICONS.sprout}</span>
             <h1 class="display-font">Ngapori Ranch Planting Calendar</h1>
           </div>
-          <p class="sub">What's actually scheduled to go in the ground, straight from VPOS <code>COHORT_MASTER</code>. Click a month to see its cohorts.</p>
+          <p class="subtitle">What are we planting, where, and when? Click a month to see the crops, click a crop for the full detail.</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn-secondary" data-action="open-glossary">${icon("info", 16)} What do these terms mean?</button>
+          <button class="btn-secondary" data-action="refresh" title="Refresh from Google Sheet">
+            <span class="${state.loadState === "loading" ? "spin" : ""}" style="display:flex">${icon("refresh", 16)}</span>
+          </button>
         </div>
       </div>
-      <div class="source-line"><span class="dot"></span> Snapshot from Ranch_Vegetable_VPOS_MASTER_v2026.xlsx — ${COHORTS.length} scheduled cohorts, captured ${SNAPSHOT_DATE}. Not live — re-upload the workbook and ask me to refresh this file to update it.</div>
 
-      <div class="hero">
-        <div>
-          <div class="hero-label">THIS MONTH</div>
-          <div class="hero-month display-font">${MONTHS[curM]}</div>
-        </div>
-        <div class="hero-text">
-          ${curCohorts.length
-            ? `${curCohorts.length} cohort${curCohorts.length===1?'':'s'} scheduled to plant this month.`
-            : `No cohorts are currently scheduled to plant this month. Wave 01 cohorts are all dated in September 2026.`}
-        </div>
-        <button class="btn" onclick="window.__openMonth(${curM})">See this month's work →</button>
+      <div class="sync-banner ${state.loadState === "fallback" ? "fallback" : ""}">
+        ${state.loadState === "loading" ? `<span class="spin" style="display:flex">${icon("refresh", 13)}</span> Loading the latest calendar from Google Sheets…` : ""}
+        ${state.loadState === "live" ? `<span class="sync-dot"></span> Live from Google Sheet${state.lastSynced ? " · synced " + state.lastSynced.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}` : ""}
+        ${state.loadState === "fallback" ? `${icon("alertTriangle", 13)} Couldn't reach the Google Sheet — showing sample data. <button class="link-btn" data-action="refresh">Try again</button>` : ""}
       </div>
 
-      <div class="grid">
-        ${MONTHS.map((m,i) => {
-          const list = grouped[i];
-          const empty = list.length === 0;
-          const blocks = [...new Set(list.map(c=>c.block_id))];
+      <div class="due-bar">
+        <div class="due-label-block">
+          ${icon("bell", 20)}
+          <div>
+            <div class="due-label">Due now</div>
+            <div class="due-month display-font">${currentMonth}</div>
+          </div>
+        </div>
+        <div class="due-desc">
+          ${dueNowItems.length} planting ${dueNowItems.length === 1 ? "item is" : "items are"} scheduled this month across
+          ${monthStats[currentMonth] ? monthStats[currentMonth].totalBeds : 0} beds. Next month (${nextMonth}) has ${monthStats[nextMonth] ? monthStats[nextMonth].items.length : 0} items lined up.
+        </div>
+        <button class="due-btn" data-action="open-month" data-month="${esc(currentMonth)}">See this month's work ${icon("chevronRight", 16)}</button>
+      </div>
+
+      <div class="year-grid">
+        ${MONTHS.map((m) => {
+          const s = monthStats[m];
+          const isCurrent = m === currentMonth;
+          const accent = MONTH_ACCENT[m];
           return `
-            <div class="card ${empty?'empty':''}" onclick="window.__openMonth(${i})">
-              ${i===curM ? '<div class="stamp">CURRENT</div>' : ''}
-              <div class="card-head">
-                <span class="swatch" style="background:${empty ? '#9a967e' : (BLOCK_COLORS[blocks[0]]||'#3C5A3E')}"></span>
-                <span class="card-month">${m}</span>
+            <div class="packet-card month-card" data-action="open-month" data-month="${esc(m)}" style="border-left:5px solid ${accent}">
+              ${isCurrent ? `<div class="stamp">IN SEASON</div>` : ""}
+              <div class="month-head">
+                <span class="month-dot" style="background:${accent}"></span>
+                <div class="month-name display-font">${esc(m)}</div>
               </div>
-              ${empty
-                ? `<div class="none-row">No cohorts scheduled yet</div>`
-                : `
-                  <div class="row"><span>Cohorts planting</span><b>${list.length}</b></div>
-                  <div class="row"><span>Blocks involved</span><b>${blocks.length}</b></div>
-                  <div class="row"><span>Beds assigned</span><b>${list.filter(c=>c.assigned_beds.length).length} of ${list.length}</b></div>
-                `
-              }
+              <div class="month-stats">
+                <div class="row"><span>Greenhouse &amp; High Tunnel</span><span class="val mono-font" style="color:#3C5A3E">${s.protectedCount}</span></div>
+                <div class="row"><span>Open Field &amp; Perennial</span><span class="val mono-font" style="color:#A8472E">${s.fieldCount}</span></div>
+                <div class="total"><span>Beds needed</span><span class="mono-font">${s.totalBeds}+</span></div>
+              </div>
             </div>
           `;
-        }).join('')}
+        }).join("")}
       </div>
 
-      <p class="foot-note">This calendar shows only cohorts that actually exist in <code>COHORT_MASTER</code> today — it does not repeat or project a template onto future years. Right now that's Wave 01: 37 test cohorts, all planted in September 2026, all in open-field blocks. Greenhouse and High Tunnel cohorts, and any planting beyond Wave 01, will appear here automatically once they're added to the sheet. All 37 cohorts now have a bed linked via <code>Current_Cohort_ID</code> in <code>BED_MASTER</code>. The Phase 2 block reconciliation against <code>CROP_ZONING_REFERENCE</code> has been applied: Broccoli/Cauliflower moved from Block 2 to Block 3 (25% max brassica maturity rule), Onions moved from Block 3 to Block 2, Sweet Potatoes/Yams/Carrots/Beets/Turnips/Amaranth moved to Block 4, and Cassava/Asparagus/Plantains moved to the non-rotational Zone 5 no-till beds. Note: Amaranth's move to Block 4 was a business decision, not a value drawn directly from <code>CROP_ZONING_REFERENCE</code>, which doesn't list it under any block. Before you plant, confirm bed readiness and worker assignment in the VPOS system (<code>Ranch_Vegetable_VPOS_MASTER</code>).</p>
+      <p class="footnote">
+        This calendar is a planning reference: it repeats every year and shows what should go in the ground, not whether a bed is actually free today.
+        Before you plant, confirm bed readiness and worker assignment in <strong>Ranch_AAB</strong>.
+      </p>
     </div>
-
-    <div id="monthOverlay"></div>
-    <div id="cohortOverlay"></div>
   `;
-  renderMonthModal();
-  renderCohortModal();
-}
 
-function renderMonthModal(){
-  const el = document.getElementById('monthOverlay');
-  if (state.monthIdx === null) { el.innerHTML=''; return; }
-  const mi = state.monthIdx;
-  const list = grouped[mi];
-  const byBlock = {};
-  list.forEach(c => { (byBlock[c.block_id] ||= []).push(c); });
-  const blocks = Object.keys(byBlock).sort();
-
-  el.innerHTML = `
-    <div class="overlay" onclick="window.__closeMonth(event)">
-      <div class="modal" onclick="event.stopPropagation()">
-        <div class="modal-head">
-          <div>
-            <div class="modal-eyebrow">PLANTING FOR</div>
-            <h2 class="modal-title display-font">${MONTHS[mi]}</h2>
+  /* Month detail modal */
+  if (state.selectedMonth && monthDetail) {
+    let groupsHtml = groupedDetail.map(({ group, items }) => {
+      const gIcon = GROUP_ICON[group] || "leaf";
+      const rows = items.map((item, i) => `
+        <div class="crop-row" data-action="open-crop" data-crop-idx="${i}" data-group="${esc(group)}"
+          style="border-top:${i === 0 ? "none" : "1px solid var(--line)"};border-left:4px solid ${GROUP_COLOR[group]}">
+          <div class="left">
+            <span class="crop-emoji">${CROP_ICON[item.crop] || "🌱"}</span>
+            <div>
+              <div class="crop-name">${esc(item.crop)}</div>
+              <div class="crop-window">${esc(item.window)}</div>
+            </div>
           </div>
-          <button class="close" onclick="window.__closeMonth()">✕</button>
-        </div>
-        <div class="modal-body">
-          ${list.length === 0
-            ? `<div class="empty-state">No cohorts are scheduled to plant in ${MONTHS[mi]} yet.<br/>This will fill in automatically as new cohorts are added to COHORT_MASTER.</div>`
-            : blocks.map(b => `
-                <div class="group-head">
-                  <span class="swatch" style="background:${BLOCK_COLORS[b]}"></span>
-                  <span class="group-name" style="color:${BLOCK_COLORS[b]}">${BLOCK_LABELS[b] || b}</span>
-                </div>
-                <div class="cohort-list">
-                  ${byBlock[b].map(c => `
-                    <div class="cohort-row" style="border-left:4px solid ${BLOCK_COLORS[b]}" onclick='window.__openCohort(${JSON.stringify(c.cohort_id)})'>
-                      <div style="display:flex;align-items:center;gap:10px">
-                        <span style="font-size:19px">${CROP_EMOJI[c.crop_name] || '🌱'}</span>
-                        <div>
-                          <div style="font-weight:600;font-size:14px">${c.crop_name}</div>
-                          <div style="font-size:12px;color:var(--inkSoft)">Plant ${fmtDate(c.planting_date)}</div>
-                        </div>
-                      </div>
-                      <div style="display:flex;align-items:center;gap:10px">
-                        <span class="mono-font" style="font-size:11px;color:${c.assigned_beds.length ? 'var(--green)' : 'var(--clay)'}">${c.assigned_beds.length ? c.assigned_beds.join(', ') : 'no bed yet'}</span>
-                        <span class="mono-font" style="font-size:11.5px;color:var(--inkSoft)">${c.cohort_id}</span>
-                      </div>
-                    </div>
-                  `).join('')}
-                </div>
-              `).join('')
-          }
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function renderCohortModal(){
-  const el = document.getElementById('cohortOverlay');
-  const c = state.cohort;
-  if (!c) { el.innerHTML=''; return; }
-  el.innerHTML = `
-    <div class="overlay" onclick="window.__closeCohort(event)">
-      <div class="modal" style="max-width:460px" onclick="event.stopPropagation()">
-        <div class="modal-head">
-          <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:24px">${CROP_EMOJI[c.crop_name] || '🌱'}</span>
-            <h2 class="modal-title display-font" style="font-size:20px">${c.crop_name}</h2>
+          <div class="right">
+            <span class="crop-beds mono-font">${esc(item.beds)}</span>
+            ${icon("chevronRight", 16)}
           </div>
-          <button class="close" onclick="window.__closeCohort()">✕</button>
         </div>
-        <div class="field-detail">
-          <div class="fd-row"><div class="fd-icon">🌱</div><div><div class="fd-label">COHORT</div><div class="fd-val mono-font" style="font-size:13px">${c.cohort_id}</div><div class="fd-sub">Status: ${c.status}</div></div></div>
-          <div class="fd-row"><div class="fd-icon">📅</div><div><div class="fd-label">PLANTING → EXPECTED HARVEST</div><div class="fd-val">${fmtDate(c.planting_date)} → ${fmtDate(c.expected_harvest_date)}</div><div class="fd-sub">${c.cycle_days ? c.cycle_days + ' day cycle (CROP_REFERENCE midpoint)' : ''}</div></div></div>
-          <div class="fd-row"><div class="fd-icon">📍</div><div><div class="fd-label">BLOCK & ENVIRONMENT</div><div class="fd-val">${BLOCK_LABELS[c.block_id] || c.block_id}</div><div class="fd-sub">Environment: ${c.environment}</div></div></div>
-          <div class="fd-row"><div class="fd-icon">💧</div><div><div class="fd-label">IRRIGATION PROFILE</div><div class="fd-val mono-font" style="font-size:13px">${c.irrigation_profile_id}</div></div></div>
-          <div class="fd-row"><div class="fd-icon">🛏️</div><div><div class="fd-label">ASSIGNED BEDS</div><div class="fd-val mono-font" style="font-size:13px">${c.assigned_beds.length ? c.assigned_beds.join(', ') : '— none yet —'}</div><div class="fd-sub">${c.assigned_beds.length ? 'From BED_MASTER Current_Cohort_ID' : 'Not yet linked in BED_MASTER'}</div></div></div>
+      `).join("");
+      return `
+        <div class="group-block">
+          <div class="group-head" style="color:${GROUP_COLOR[group]}">
+            ${icon(gIcon, 16)}
+            <span class="group-title display-font">${esc(group)}</span>
+          </div>
+          <div class="group-list">${rows}</div>
+        </div>
+      `;
+    }).join("");
+
+    html += `
+      <div class="modal-overlay" data-action="close-month">
+        <div class="modal-card" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <div>
+              <div class="modal-eyebrow">Planting for</div>
+              <h2 class="modal-title display-font">${esc(state.selectedMonth)}</h2>
+            </div>
+            <button class="close-btn" data-action="close-month">${icon("x", 22)}</button>
+          </div>
+          <div class="modal-body">
+            ${renderFieldMap(zoneStats, state.mapZoneFilter)}
+            ${state.mapZoneFilter ? `
+              <div class="zone-pill">
+                Showing only <strong style="margin-left:3px;margin-right:3px">${esc((ZONE_INFO[state.mapZoneFilter] && ZONE_INFO[state.mapZoneFilter].full) || state.mapZoneFilter)}</strong>
+                <button data-action="clear-zone">${icon("x", 13)}</button>
+              </div>
+            ` : ""}
+            ${groupsHtml}
+          </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
+  }
+
+  /* Crop detail modal */
+  if (state.selectedCrop) {
+    const c = state.selectedCrop;
+    const zoneGroup = ZONE_INFO[c.zone] && ZONE_INFO[c.zone].group;
+    html += `
+      <div class="modal-overlay" data-action="close-crop">
+        <div class="modal-card" style="max-width:460px" onclick="event.stopPropagation()">
+          <div class="crop-detail-header">
+            <div class="crop-detail-title-row">
+              <span class="crop-detail-emoji">${CROP_ICON[c.crop] || "🌱"}</span>
+              <h2 class="crop-detail-title display-font">${esc(c.crop)}</h2>
+            </div>
+            <button class="close-btn" data-action="close-crop">${icon("x", 20)}</button>
+          </div>
+          <div class="crop-detail-body">
+            ${renderDetailRow("sprout", "What", c.crop, `Planting method: ${c.method}`)}
+            ${renderDetailRow("calendar", "When", `${c.m} — ${c.window}`, "Recurs the same way every year.")}
+            ${renderDetailRow(GROUP_ICON[zoneGroup] || "mapPin", "Where", (ZONE_INFO[c.zone] && ZONE_INFO[c.zone].full) || c.zone, `Zone code on paperwork: ${c.zone}`, GROUP_COLOR[zoneGroup])}
+            ${renderDetailRow("leaf", "How many", c.beds, "Growing beds to set aside for this planting.")}
+            <div class="cohort-note">
+              <strong style="color:var(--ink)">Cohort code pattern:</strong> <span class="mono-font">${esc(c.coh)}</span><br />
+              This becomes the batch's tracking ID — crop, planting year, then a batch number filled in once the round is actually planted in Ranch_AAB.
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /* Glossary modal */
+  if (state.showGlossary) {
+    html += `
+      <div class="modal-overlay" data-action="close-glossary">
+        <div class="modal-card" style="max-width:520px" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <h2 class="glossary-title display-font">Terms used on this calendar</h2>
+            <button class="close-btn" data-action="close-glossary">${icon("x", 20)}</button>
+          </div>
+          <div class="glossary-body">
+            ${GLOSSARY.map((g) => `
+              <div class="glossary-row">
+                <div class="glossary-term mono-font">${esc(g.term)}</div>
+                <div class="glossary-meaning">${esc(g.meaning)}</div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  document.getElementById("app").innerHTML = html;
+
+  // Stash current monthDetail items (post-filter, grouped order) for crop click lookups
+  window.__groupedDetail = groupedDetail;
 }
 
-window.__openMonth = (i) => { state.monthIdx = i; renderMonthModal(); };
-window.__closeMonth = (e) => { if (e && e.target !== e.currentTarget) return; state.monthIdx = null; renderMonthModal(); };
-window.__openCohort = (id) => { state.cohort = COHORTS.find(c => c.cohort_id === id); renderCohortModal(); };
-window.__closeCohort = (e) => { if (e && e.target !== e.currentTarget) return; state.cohort = null; renderCohortModal(); };
+/* ---------- Event delegation ---------- */
+document.addEventListener("click", (e) => {
+  const target = e.target.closest("[data-action]");
+  if (!target) return;
+  const action = target.getAttribute("data-action");
+
+  if (action === "open-month") {
+    state.selectedMonth = target.getAttribute("data-month");
+    state.mapZoneFilter = null;
+    render();
+  } else if (action === "close-month") {
+    state.selectedMonth = null;
+    state.mapZoneFilter = null;
+    render();
+  } else if (action === "open-crop") {
+    const group = target.getAttribute("data-group");
+    const idx = parseInt(target.getAttribute("data-crop-idx"), 10);
+    const groupEntry = (window.__groupedDetail || []).find((g) => g.group === group);
+    if (groupEntry && groupEntry.items[idx]) {
+      state.selectedCrop = groupEntry.items[idx];
+      render();
+    }
+  } else if (action === "close-crop") {
+    state.selectedCrop = null;
+    render();
+  } else if (action === "open-glossary") {
+    state.showGlossary = true;
+    render();
+  } else if (action === "close-glossary") {
+    state.showGlossary = false;
+    render();
+  } else if (action === "refresh") {
+    loadSheet();
+  } else if (action === "zone-click") {
+    const zone = target.getAttribute("data-zone");
+    state.mapZoneFilter = state.mapZoneFilter === zone ? null : zone;
+    render();
+  } else if (action === "clear-zone") {
+    state.mapZoneFilter = null;
+    render();
+  }
+});
 
 render();
+loadSheet();
 </script>
 </body>
 </html>
